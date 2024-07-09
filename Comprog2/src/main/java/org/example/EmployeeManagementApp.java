@@ -1,0 +1,415 @@
+package org.example;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.io.*;
+import java.util.Vector;
+
+public class EmployeeManagementApp extends JFrame {
+    private JPanel loginPanel;
+    private JPanel welcomePanel;
+    private DefaultTableModel model;
+    private JTable table;
+    private int selectedRow = -1;
+
+    public EmployeeManagementApp() {
+        // Set up the login frame
+        setTitle("Employee Management Application - Login");
+        setSize(400, 200);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        // Login panel
+        loginPanel = new JPanel(new GridLayout(3, 2));
+        JTextField usernameField = new JTextField();
+        JPasswordField passwordField = new JPasswordField();
+        JButton loginButton = new JButton("Login");
+
+        loginPanel.add(new JLabel("Username:"));
+        loginPanel.add(usernameField);
+        loginPanel.add(new JLabel("Password:"));
+        loginPanel.add(passwordField);
+        loginPanel.add(new JLabel()); // Empty label for spacing
+        loginPanel.add(loginButton);
+
+        add(loginPanel, BorderLayout.CENTER);
+
+        // Action listener for login button
+        loginButton.addActionListener(e -> {
+            String username = usernameField.getText().trim();
+            String password = new String(passwordField.getPassword()).trim();
+
+            if (username.equals("userAccess") && password.equals("user123")) {
+                setupMainFrame();
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid username or password. Please try again.", "Login Failed", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Make the login frame visible
+        setVisible(true);
+    }
+
+    private void setupMainFrame() {
+        // Close the login frame
+        setVisible(false);
+        dispose();
+
+        // Set up the main frame
+        JFrame mainFrame = new JFrame("Employee Management Application");
+        mainFrame.setSize(800, 600);
+        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mainFrame.setLayout(new BorderLayout());
+
+        // Welcome panel
+        welcomePanel = new JPanel(new GridLayout(4, 1));
+        welcomePanel.add(new JLabel("Welcome to the Employee Management System", JLabel.CENTER));
+
+        JButton manageEmployeeButton = new JButton("Manage Employee Information");
+        JButton leaveRequestButton = new JButton("Submit Leave Request");
+        JButton viewLeaveRequestsButton = new JButton("View Leave Requests");
+
+        welcomePanel.add(manageEmployeeButton);
+        welcomePanel.add(leaveRequestButton);
+        welcomePanel.add(viewLeaveRequestsButton);
+
+        mainFrame.add(welcomePanel, BorderLayout.CENTER);
+
+        // Action listeners for the buttons
+        manageEmployeeButton.addActionListener(e -> openManageEmployeeFrame());
+        leaveRequestButton.addActionListener(e -> openLeaveRequestFrame());
+        viewLeaveRequestsButton.addActionListener(e -> openViewLeaveRequestsFrame());
+
+        // Make the main frame visible
+        mainFrame.setVisible(true);
+    }
+
+private void openManageEmployeeFrame() {
+        JFrame frame = new JFrame("Manage Employee Information");
+        frame.setSize(800, 600);
+        frame.setLayout(new BorderLayout());
+
+        // Table model and JTable
+        model = new DefaultTableModel(new String[]{"Employee Number", "Last Name", "First Name", "SSS No.", "PhilHealth No.", "TIN", "Pagibig No."}, 0);
+        table = new JTable(model);
+        loadCSV();
+
+        frame.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        // Input fields and buttons
+        JPanel inputPanel = new JPanel(new GridLayout(7, 2));
+        JTextField empNumField = createIntegerField();
+        JTextField lastNameField = new JTextField();
+        JTextField firstNameField = new JTextField();
+        JTextField sssField = createIntegerField();
+        JTextField philHealthField = createIntegerField();
+        JTextField tinField = createIntegerField();
+        JTextField pagibigField = createIntegerField();
+
+        inputPanel.add(new JLabel("Employee Number:"));
+        inputPanel.add(empNumField);
+        inputPanel.add(new JLabel("Last Name:"));
+        inputPanel.add(lastNameField);
+        inputPanel.add(new JLabel("First Name:"));
+        inputPanel.add(firstNameField);
+        inputPanel.add(new JLabel("SSS No.:"));
+        inputPanel.add(sssField);
+        inputPanel.add(new JLabel("PhilHealth No.:"));
+        inputPanel.add(philHealthField);
+        inputPanel.add(new JLabel("TIN:"));
+        inputPanel.add(tinField);
+        inputPanel.add(new JLabel("Pagibig No.:"));
+        inputPanel.add(pagibigField);
+
+        frame.add(inputPanel, BorderLayout.NORTH);
+
+        JButton addButton = new JButton("Add Employee");
+        JButton deleteButton = new JButton("Delete Employee");
+        JButton editButton = new JButton("Edit Employee");
+        JButton viewButton = new JButton("View Employee");
+
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 4));
+        buttonPanel.add(addButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(editButton);
+        buttonPanel.add(viewButton);
+        frame.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Action listeners for the buttons
+        addButton.addActionListener(e -> {
+            String empNum = empNumField.getText();
+            String lastName = lastNameField.getText();
+            String firstName = firstNameField.getText();
+            String sss = sssField.getText();
+            String philHealth = philHealthField.getText();
+            String tin = tinField.getText();
+            String pagibig = pagibigField.getText();
+
+            model.addRow(new Object[]{empNum, lastName, firstName, sss, philHealth, tin, pagibig});
+            saveCSV();
+        });
+
+        deleteButton.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row != -1) {
+                model.removeRow(row);
+                saveCSV();
+            }
+        });
+
+        editButton.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row != -1) {
+                model.setValueAt(empNumField.getText(), row, 0);
+                model.setValueAt(lastNameField.getText(), row, 1);
+                model.setValueAt(firstNameField.getText(), row, 2);
+                model.setValueAt(sssField.getText(), row, 3);
+                model.setValueAt(philHealthField.getText(), row, 4);
+                model.setValueAt(tinField.getText(), row, 5);
+                model.setValueAt(pagibigField.getText(), row, 6);
+                saveCSV();
+            }
+        });
+
+        viewButton.addActionListener(e -> {
+            selectedRow = table.getSelectedRow();
+            viewEmployee();
+        });
+
+        frame.setVisible(true);
+    }
+
+    private void openLeaveRequestFrame() {
+        JFrame frame = new JFrame("Submit Leave Request");
+        frame.setSize(400, 300);
+        frame.setLayout(new BorderLayout());
+
+        JPanel formPanel = new JPanel(new GridLayout(4, 2));
+
+        JTextField nameField = new JTextField();
+        JTextField daysField = createIntegerField();
+        JTextField reasonField = new JTextField();
+
+        formPanel.add(new JLabel("Name:"));
+        formPanel.add(nameField);
+        formPanel.add(new JLabel("Days of Leave:"));
+        formPanel.add(daysField);
+        formPanel.add(new JLabel("Reason for Leave:"));
+        formPanel.add(reasonField);
+
+        JButton submitButton = new JButton("Submit Leave Request");
+        formPanel.add(submitButton);
+
+        frame.add(formPanel, BorderLayout.CENTER);
+
+        submitButton.addActionListener(e -> {
+            String name = nameField.getText();
+            String days = daysField.getText();
+            String reason = reasonField.getText();
+
+            saveLeaveRequest(name, days, reason);
+            JOptionPane.showMessageDialog(frame, "Leave request submitted successfully!");
+
+            nameField.setText("");
+            daysField.setText("");
+            reasonField.setText("");
+        });
+
+        frame.setVisible(true);
+    }
+
+    private void openViewLeaveRequestsFrame() {
+        JFrame frame = new JFrame("View Leave Requests");
+        frame.setSize(800, 600);
+        frame.setLayout(new BorderLayout());
+
+        // Table model and JTable
+        DefaultTableModel leaveModel = new DefaultTableModel(new String[]{"Name", "Days of Leave", "Reason"}, 0);
+        JTable leaveTable = new JTable(leaveModel);
+        loadLeaveRequests(leaveModel);
+
+        frame.add(new JScrollPane(leaveTable), BorderLayout.CENTER);
+
+        frame.setVisible(true);
+    }
+
+    private void saveCSV() {
+        try (PrintWriter writer = new PrintWriter(new File("Main-Employee-Info.csv"))) {
+            for (int i = 0; i < model.getRowCount(); i++) {
+                Vector<?> row = model.getDataVector().elementAt(i);
+                for (Object cell : row) {
+                    writer.print(cell + ",");
+                }
+                writer.println();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadCSV() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("Main-Employee-Info.csv"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                model.addRow(line.split(","));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveLeaveRequest(String name, String days, String reason) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter("Leave-Requests.csv", true))) {
+            writer.println(name + "," + days + "," + reason);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadLeaveRequests(DefaultTableModel leaveModel) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("Leave-Requests.csv"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                leaveModel.addRow(line.split(","));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void viewEmployee() {
+        if (selectedRow != -1) {
+            String empNum = model.getValueAt(selectedRow, 0).toString();
+            String lastName = model.getValueAt(selectedRow, 1).toString();
+            String firstName = model.getValueAt(selectedRow, 2).toString();
+            String sss = model.getValueAt(selectedRow, 3).toString();
+            String philHealth = model.getValueAt(selectedRow, 4).toString();
+            String tin = model.getValueAt(selectedRow, 5).toString();
+            String pagibig = model.getValueAt(selectedRow, 6).toString();
+
+            // Create the details frame
+            JFrame detailsFrame = new JFrame("Employee Details");
+            detailsFrame.setSize(600, 400);
+            detailsFrame.setLayout(new BorderLayout());
+
+            // Panel for employee information
+            JPanel infoPanel = new JPanel(new GridLayout(7, 2));
+            infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+            infoPanel.add(new JLabel("Employee Number:"));
+            infoPanel.add(new JLabel(empNum));
+            infoPanel.add(new JLabel("Last Name:"));
+            infoPanel.add(new JLabel(lastName));
+            infoPanel.add(new JLabel("First Name:"));
+            infoPanel.add(new JLabel(firstName));
+            infoPanel.add(new JLabel("SSS No.:"));
+            infoPanel.add(new JLabel(sss));
+            infoPanel.add(new JLabel("PhilHealth No.:"));
+            infoPanel.add(new JLabel(philHealth));
+            infoPanel.add(new JLabel("TIN:"));
+            infoPanel.add(new JLabel(tin));
+            infoPanel.add(new JLabel("Pagibig No.:"));
+            infoPanel.add(new JLabel(pagibig));
+
+            // Panel for salary calculation
+            JPanel salaryPanel = new JPanel(new GridLayout(6, 2));
+            salaryPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+            JTextField basicSalaryField = new JTextField();
+            JTextField pagibigDeductionField = new JTextField();
+            JTextField sssDeductionField = new JTextField();
+            JTextField philHealthDeductionField = new JTextField();
+            JTextField withholdingTaxField = new JTextField();
+            JTextField totalSalaryField = new JTextField();
+
+            salaryPanel.add(new JLabel("Basic Salary:"));
+            salaryPanel.add(basicSalaryField);
+            salaryPanel.add(new JLabel("PagIbig Deduction:"));
+            salaryPanel.add(pagibigDeductionField);
+            salaryPanel.add(new JLabel("SSS Deduction:"));
+            salaryPanel.add(sssDeductionField);
+            salaryPanel.add(new JLabel("PhilHealth Deduction:"));
+            salaryPanel.add(philHealthDeductionField);
+            salaryPanel.add(new JLabel("Withholding Tax:"));
+            salaryPanel.add(withholdingTaxField);
+            salaryPanel.add(new JLabel("Total Salary:"));
+            salaryPanel.add(totalSalaryField);
+
+            // Dropdown for selecting month
+            String[] months = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+            JComboBox<String> monthDropdown = new JComboBox<>(months);
+            salaryPanel.add(new JLabel("Select Month:"));
+            salaryPanel.add(monthDropdown);
+
+            // Calculate button
+            JButton calculateButton = new JButton("Calculate Salary");
+            salaryPanel.add(new JLabel()); // Placeholder
+            salaryPanel.add(calculateButton);
+
+            // Add panels to details frame
+            detailsFrame.add(infoPanel, BorderLayout.CENTER);
+            detailsFrame.add(salaryPanel, BorderLayout.SOUTH);
+
+            // Action listener for calculate button
+            calculateButton.addActionListener(e -> {
+                try {
+                    double basicSalary = Double.parseDouble(basicSalaryField.getText());
+
+                    // Calculate deductions
+                    double pagibigDeduction = basicSalary * 0.02;
+                    double sssDeduction = 1125;
+                    double philHealthDeduction = (basicSalary * 0.03) / 50;
+                    double totalDeductions = pagibigDeduction + sssDeduction + philHealthDeduction;
+
+                    // Calculate withholding tax
+                    double taxableIncome = basicSalary - totalDeductions;
+                    double withholdingTax = 0;
+                    if (taxableIncome > 20833) {
+                        withholdingTax = (taxableIncome - 20833) * 0.20;
+                    }
+
+                    // Total deductions including withholding tax
+                    totalDeductions += withholdingTax;
+
+                    // Calculate final salary
+                    double finalSalary = basicSalary - totalDeductions;
+
+                    // Display results in text fields
+                    pagibigDeductionField.setText(String.format("%.2f", pagibigDeduction));
+                    sssDeductionField.setText(String.format("%.2f", sssDeduction));
+                    philHealthDeductionField.setText(String.format("%.2f", philHealthDeduction));
+                    withholdingTaxField.setText(String.format("%.2f", withholdingTax));
+                    totalSalaryField.setText(String.format("%.2f", finalSalary));
+
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(detailsFrame, "Please enter a valid basic salary.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+
+            // Make details frame visible
+            detailsFrame.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a row to view.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private JTextField createIntegerField() {
+        JTextField textField = new JTextField();
+        textField.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!Character.isDigit(c) && c != KeyEvent.VK_BACK_SPACE && c != KeyEvent.VK_DELETE) {
+                    e.consume();
+                }
+            }
+        });
+        return textField;
+    }
+
+    public static void main(String[] args) {
+        new EmployeeManagementApp();
+    }
+}
